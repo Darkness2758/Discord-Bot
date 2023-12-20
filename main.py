@@ -55,8 +55,8 @@ async def ping(ctx):
     embed = discord.Embed(
         title='Bot Latency',
         description=(
-            f'**Bot Ping:** {bot_response_time:.2f}ms\n 💯'
-            f'**API Ping:** {api_latency}ms\n 💥'
+            f'**Bot Ping:** {bot_response_time:.2f}ms 💯\n'
+            f'**API Ping:** {api_latency}ms 💥\n'
             f'**Server Ping:** {server_latency}ms 💫'
         ),
         color=discord.Color.blue()
@@ -260,103 +260,37 @@ async def bpurge(ctx, limit: int):
     await ctx.send(f'Purged {len(deleted_messages) - 1} bot messages.')
 
 #Rule
-@bot.command(name='rule', help='Display server rules')
-async def rule(ctx):
+@bot.command(name='rules', help='Display server rules.')
+async def rules(ctx):
+    # Read rules from a text file
     with open('rules.txt', 'r', encoding='utf-8') as file:
         rules = file.read()
-    embed = discord.Embed(
-        title='Rules & Guideness',
-        description=rules,
-        color=discord.Color.green()
-    )
-    message = await ctx.send(embed=embed)
-    emojis = ['✅']
-    for emoji in emojis:
-        await message.add_reaction(emoji)
+
+    # Custom emoji reaction
+    emoji = '\U0001F4DD'  # You can change this to any emoji you want
+
+    # Send rules with the custom emoji reaction
+    message = await ctx.send(f'{emoji} **Server Rules** {emoji}\n\n{rules}')
+    await message.add_reaction(emoji)
 
 
 #===========================================================#
-
-class MyHelpCommand(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-
-    async def send_bot_help(self, mapping, ctx):
-        embed = discord.Embed(
-            title="Command Help",
-            color=discord.Color.blue(),
-            description="Please choose a category:"
-        )
-
-        # Display server icon
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-
-        # Generate a list of categories
-        categories = sorted(set(cog.qualified_name for cog in self.bot.cogs.values()))
-        for category in categories:
-            cog = self.bot.get_cog(category)
-            if cog:
-                commands_list = []
-                for command in cog.get_commands():
-                    commands_list.append(f'`{command.name}` - {command.short_doc or "No description"}')
-                category_description = '\n'.join(commands_list)
-                embed.add_field(name=f"**{category}**", value=category_description, inline=False)
-
-        message = await ctx.send(embed=embed)
-        reactions = ['⬅️', '➡️']
-
-        for reaction in reactions:
-            await message.add_reaction(reaction)
-
-        def check(reaction, user):
-            return user == ctx.author and reaction.message.id == message.id and str(reaction.emoji) in reactions
-
-        current_page = 0
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
-
-                if str(reaction.emoji) == '⬅️':
-                    current_page = max(0, current_page - 1)
-                elif str(reaction.emoji) == '➡️':
-                    current_page = min(len(categories) - 1, current_page + 1)
-
-                new_embed = discord.Embed(
-                    title=f"Command Help - Category: {categories[current_page]}",
-                    color=discord.Color.blue()
-                )
-                cog_name = categories[current_page]
-                cog = self.bot.get_cog(cog_name)
-                if cog:
-                    commands_list = []
-                    for command in cog.get_commands():
-                        commands_list.append(f'`{command.name}` - {command.short_doc or "No description"}')
-                    new_embed.description = '\n'.join(commands_list)
-
-                # Display server icon
-                new_embed.set_thumbnail(url=ctx.guild.icon.url)
-
-                await message.edit(embed=new_embed)
-                await message.remove_reaction(reaction, user)
-
-            except asyncio.TimeoutError:
-                break
-
-# Remove the default help command
 bot.remove_command('help')
 
-# Add the cog to the bot
-help_cog = MyHelpCommand(bot)
-bot.add_cog(help_cog)
-
-# Custom $help command
-@bot.command(name='help', help='Display a list of commands and their descriptions.')
+@bot.command(name='help', help='Show a list of available commands.')
 async def help(ctx):
-    # Trigger the simplified help system
-    await help_cog.send_bot_help(None, ctx)
+    embed = discord.Embed(
+        title='Command Help',
+        color=discord.Color.blue(),
+        description='Here is a list of available commands:'
+    )
+
+    for command in bot.commands:
+        embed.add_field(name=command.name, value=command.help or 'No description', inline=False)
+
+    await ctx.send(embed=embed)
 
 #===========================================================#
 
-# Run the bot with the token
+
 bot.run('YOUR TOKEN HERE')
